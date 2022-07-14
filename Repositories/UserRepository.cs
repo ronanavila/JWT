@@ -8,8 +8,8 @@ public static class UserRepository
     {
         var users = new List<User>
         {
-            new User { Id = 1, UserName = "Jovem", Password = "Peter", Role = "avg" },
-            new User { Id = 2, UserName = "Velho", Password = "Carlos", Role = "new" }
+            new User { Id = 1, UserName = "Jovem", Password = "Peter", Role = "employee" },
+            new User { Id = 2, UserName = "Velho", Password = "Carlos", Role = "manager" }
         };
         return users.FirstOrDefault(u => string.Equals(u.UserName, userName, StringComparison.CurrentCultureIgnoreCase)
         && u.Password == password);
