@@ -2,6 +2,7 @@ using Auth.Models;
 using Auth.Repositories;
 using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Auth.Controllers;
 
@@ -18,14 +19,40 @@ public class LoginController: ControllerBase
         if(user == null)
             return NotFound(new {message = "User or Password incorrect."});
         
-        var token = TokenService.GenerateToken(user);
+        var token =  TokenService.GenerateToken(user);
+        var refreshToken = TokenService.GenerateRefreshToken();
+        TokenService.SaveRefreshToken(user.UserName, refreshToken);
 
         user.Password = "";
 
-        return new 
+        return  new 
         {
             user = user,
-            token = token
+            token = token,
+            refreshToken = refreshToken
+        };
+    }
+
+    [HttpPost]
+    [Route("refresh")]
+    public async Task<ActionResult<dynamic>> Refresh([FromBody]RefreshToken refreshToken)
+    {
+        var principal = TokenService.GetPrincipalFromExpiredToken(refreshToken.Token);
+        var userName = principal.Identity.Name;
+        var savedRefreshToken = TokenService.GetRefreshToken(userName);
+
+        if(savedRefreshToken != refreshToken.RefreshTk)
+            throw new SecurityTokenException("Invalid Refresh Token");
+
+        var newJwtToken = TokenService.GenerateToken(principal.Claims);
+        var newRefreshToken = TokenService.GenerateRefreshToken();
+
+        TokenService.DeleteRefreshToken(userName, refreshToken.RefreshTk);
+        TokenService.SaveRefreshToken(userName, newRefreshToken);
+        return  new 
+        {           
+            token = newJwtToken,
+            refreshToken = newRefreshToken
         };
     }
 }
